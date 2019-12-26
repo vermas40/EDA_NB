@@ -47,9 +47,7 @@ def uni_bi_numeric(df,data_types,lower_threshold = 0.8):
         .sort_values(by=0)\
         .drop_duplicates(subset = 0,keep = 'first')\
         .reset_index()
-    
-    df['rower'] = range(1,len(df)+1)
-    
+
     return (df)    
     
 
@@ -67,6 +65,7 @@ def plot_graph(main_dataset,x,type_of_graph):
     plt.ylabel(x[1])
     path = os.getcwd()
     plt.savefig(path + '/Plots/'+ type_of_graph + '/' + x[0]+' vs '+x[1]+'.png', bbox_inches='tight')
+    return(1)
     
 def PCA_func(pca_dataset,target_variable):
     X = pca_dataset.loc[:,pca_dataset.columns != target_variable]
@@ -98,7 +97,7 @@ def outlier_detection(out_ds,data_types):
     
 data_cache = num_cat(dataset)
 plot_dataset = uni_bi_numeric(dataset,data_cache,0.7)
-plot_dataset.loc[:,['level_0','level_1','rower']].apply(lambda x_send: plot_graph(dataset,x_send,'scatter'),axis=1)
+plot_dataset.loc[:,['level_0','level_1']].apply(lambda x_send: plot_graph(dataset,x_send,'scatter'),axis=1)
 
 dataset_outlier_removed = outlier_detection(dataset,data_cache)
 pca_func(dataset_outlier_removed,target)
