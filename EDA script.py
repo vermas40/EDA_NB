@@ -67,8 +67,9 @@ def plot_graph(main_dataset,x,type_of_graph):
     plt.savefig(path + '/Plots/'+ type_of_graph + '/' + x[0]+' vs '+x[1]+'.png', bbox_inches='tight')
     return(1)
     
-def PCA_func(pca_dataset,target_variable):
+def PCA_func(pca_dataset,target_variable,data_types):
     X = pca_dataset.loc[:,pca_dataset.columns != target_variable]
+    X = pca_dataset[data_types['numeric']]
     #centering data around 0 and using train data attributes to scale test data as well
     sc = StandardScaler()
     X = sc.fit_transform(X)
@@ -85,7 +86,7 @@ def PCA_func(pca_dataset,target_variable):
     return(X)
     
 def outlier_detection(out_ds,data_types):
-    out_ds.fillna(0,inplace=True)    
+    out_ds = out_ds.fillna(0)    
     clf = LocalOutlierFactor(n_neighbors=20)
     clf.fit_predict(out_ds[data_types['numeric']])
     X_scores = clf.negative_outlier_factor_
@@ -100,10 +101,8 @@ plot_dataset = uni_bi_numeric(dataset,data_cache,0.7)
 plot_dataset.loc[:,['level_0','level_1']].apply(lambda x_send: plot_graph(dataset,x_send,'scatter'),axis=1)
 
 dataset_outlier_removed = outlier_detection(dataset,data_cache)
-pca_func(dataset_outlier_removed,target)
+pca_components = PCA_func(dataset_outlier_removed,target,data_cache)
 #it works with 20 nearest neighbors
-
-
 
 dummied_variables = pd.get_dummies(dataset[data_cache['categorical']],drop_first=True)
 dataset.drop(columns = data_cache['categorical'],inplace = True)
