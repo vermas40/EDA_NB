@@ -3,12 +3,10 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 import seaborn as sns
-import time
 from sklearn.neighbors import LocalOutlierFactor
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA,SparsePCA
 from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import OneHotEncoder,LabelEncoder
-from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction import FeatureHasher
 
 sns.set()
 
@@ -19,7 +17,7 @@ sns.set()
 plt.rcParams['figure.figsize'] = 8, 5
 plt.rcParams['image.cmap'] = 'viridis'
 
-os.chdir('C:\\Users\\shivam.verma\\Documents\\Side Hoes\\EDA_NB')
+os.chdir('E:\\Libraries\\Documents\\Side Hoes\\EDA\\EDA\\EDA_NB')
 
 dataset = pd.read_csv('Crashes_Last_Five_Years.csv')
 
@@ -90,7 +88,7 @@ def outlier_detection(out_ds,data_types):
     clf = LocalOutlierFactor(n_neighbors=20)
     clf.fit_predict(out_ds[data_types['numeric']])
     X_scores = clf.negative_outlier_factor_
-    out_ds = out_ds.iloc[~out_ds.index.isin(np.where(np.absolute(np.around(X_scores,decimals = 0)) != 1))]
+    out_ds = out_ds.iloc[~out_ds.index.isin(list(np.where(np.absolute(np.around(X_scores,decimals = 0)) != 1)))]
     return(out_ds)
     
 
@@ -108,5 +106,10 @@ dummied_variables = pd.get_dummies(dataset[data_cache['categorical']],drop_first
 dataset.drop(columns = data_cache['categorical'],inplace = True)
 
 
-    
+h = FeatureHasher(input_type = 'string')
+f = h.fit_transform(dataset_outlier_removed[data_cache['categorical']])
+
+transformer = SparsePCA()
+transformer.fit(X)
+X_transformed = transformer.transform(X)
 
