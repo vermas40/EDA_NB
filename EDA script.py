@@ -2,13 +2,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-import seaborn as sns
 from sklearn.neighbors import LocalOutlierFactor
-from sklearn.decomposition import PCA,SparsePCA
+from sklearn.decomposition import PCA,TruncatedSVD
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_extraction import FeatureHasher
-
-sns.set()
 
 # Graphics in retina format are more sharp and legible
 #%config InlineBackend.figure_format = 'retina' 
@@ -65,7 +62,7 @@ def plot_graph(main_dataset,x,type_of_graph):
     plt.savefig(path + '/Plots/'+ type_of_graph + '/' + x[0]+' vs '+x[1]+'.png', bbox_inches='tight')
     return(1)
     
-def PCA_func(pca_dataset,target_variable,data_types):
+def PCA_func(pca_dataset,target_variable,data_types,type_PCA):
     X = pca_dataset.loc[:,pca_dataset.columns != target_variable]
     X = pca_dataset[data_types['numeric']]
     #centering data around 0 and using train data attributes to scale test data as well
@@ -88,7 +85,7 @@ def outlier_detection(out_ds,data_types):
     clf = LocalOutlierFactor(n_neighbors=20)
     clf.fit_predict(out_ds[data_types['numeric']])
     X_scores = clf.negative_outlier_factor_
-    out_ds = out_ds.iloc[~out_ds.index.isin(list(np.where(np.absolute(np.around(X_scores,decimals = 0)) != 1)))]
+    out_ds = out_ds.iloc[~out_ds.index.isin(np.where(np.absolute(np.around(X_scores,decimals = 0)) != 1)[0])]
     return(out_ds)
     
 
@@ -110,6 +107,9 @@ h = FeatureHasher(input_type = 'string')
 f = h.fit_transform(dataset_outlier_removed[data_cache['categorical']])
 
 transformer = SparsePCA()
-transformer.fit(X)
+transformer.fit(f)
 X_transformed = transformer.transform(X)
 
+svd = TruncatedSVD(n_components = 20,n_iter = 7,random_state = 42)
+svd.fit(f)
+print(svd.explained_variance_ratio_)
