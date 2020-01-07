@@ -62,15 +62,18 @@ def plot_graph(main_dataset,x,type_of_graph):
     plt.savefig(path + '/Plots/'+ type_of_graph + '/' + x[0]+' vs '+x[1]+'.png', bbox_inches='tight')
     return(1)
     
-def PCA_func(pca_dataset,target_variable,data_types,type_PCA):
-    X = pca_dataset.loc[:,pca_dataset.columns != target_variable]
-    X = pca_dataset[data_types['numeric']]
-    #centering data around 0 and using train data attributes to scale test data as well
-    sc = StandardScaler()
-    X = sc.fit_transform(X)
+def PCA_func(df,type_PCA):
     
-    pca = PCA()
-    X = pca.fit_transform(X)
+    #centering data around 0 and using train data attributes to scale test data as well
+    if type_PCA == 'basic':
+        sc = StandardScaler()
+        df = sc.fit_transform(df)
+        
+        pca = PCA()
+        df = pca.fit_transform(df)
+    elif type_PCA == 'sparse':
+        pca = TruncatedSVD(n_components = 20,n_iter = 7,random_state = 42)
+        pca.fit_transform(df)
     
     explained_variance = pd.DataFrame(pca.explained_variance_ratio_)
     explained_variance['comp_num'] = range(1,len(explained_variance)+1)
@@ -78,7 +81,17 @@ def PCA_func(pca_dataset,target_variable,data_types,type_PCA):
     explained_variance['cum_var'] = explained_variance.loc[:,'var_explained'].cumsum(axis = 0)
     print('Printing Variance Explained vs # of components')
     plot_graph(explained_variance,['comp_num','cum_var'],'line')
-    return(X)
+    
+    
+    
+    if type_PCA == 'sparse':
+        df = df\
+        .toarray()\
+        [:,explained_variance.loc[explained_variance['cum_var'] <= 0.9,'comp_num'] - 1]
+    elif type_PCA == 'basic':
+        df = df[[explained_variance.loc[explained_variance['cum_var'] <= 0.9,'comp_num'] - 1]]
+        
+    return(df)
     
 def outlier_detection(out_ds,data_types):
     out_ds = out_ds.fillna(0)    
@@ -88,28 +101,19 @@ def outlier_detection(out_ds,data_types):
     out_ds = out_ds.iloc[~out_ds.index.isin(np.where(np.absolute(np.around(X_scores,decimals = 0)) != 1)[0])]
     return(out_ds)
     
-
-    
+def encoding(df):
+    feature_hasher = FeatureHasher(input_type = 'string')
+    hashed_df = feature_hasher.fit_transform(df)
+    return (hashed_df)
     
 data_cache = num_cat(dataset)
 plot_dataset = uni_bi_numeric(dataset,data_cache,0.7)
 plot_dataset.loc[:,['level_0','level_1']].apply(lambda x_send: plot_graph(dataset,x_send,'scatter'),axis=1)
 
 dataset_outlier_removed = outlier_detection(dataset,data_cache)
-pca_components = PCA_func(dataset_outlier_removed,target,data_cache)
-#it works with 20 nearest neighbors
+pca_components = PCA_func(dataset_outlier_removed.loc[:,set(data_cache['numeric']) - set(target)],\
+                                                     'basic')
 
-dummied_variables = pd.get_dummies(dataset[data_cache['categorical']],drop_first=True)
-dataset.drop(columns = data_cache['categorical'],inplace = True)
+dataset_outlier_removed_hashed_cat = encoding(dataset_outlier_removed.loc[:,set(data_cache['categorical']) - set(target)])
 
-
-h = FeatureHasher(input_type = 'string')
-f = h.fit_transform(dataset_outlier_removed[data_cache['categorical']])
-
-transformer = SparsePCA()
-transformer.fit(f)
-X_transformed = transformer.transform(X)
-
-svd = TruncatedSVD(n_components = 20,n_iter = 7,random_state = 42)
-svd.fit(f)
-print(svd.explained_variance_ratio_)
+pca_components = PCA_func(dataset_outlier_removed_hashed_cat,'sparse')
