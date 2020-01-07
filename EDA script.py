@@ -14,7 +14,7 @@ from sklearn.feature_extraction import FeatureHasher
 plt.rcParams['figure.figsize'] = 8, 5
 plt.rcParams['image.cmap'] = 'viridis'
 
-os.chdir('E:\\Libraries\\Documents\\Side Hoes\\EDA\\EDA\\EDA_NB')
+os.chdir('C:\\Users\\shivam.verma\\Documents\\Side Hoes\\EDA_NB')
 
 dataset = pd.read_csv('Crashes_Last_Five_Years.csv')
 
@@ -105,15 +105,12 @@ def encoding(df):
     feature_hasher = FeatureHasher(input_type = 'string')
     hashed_df = feature_hasher.fit_transform(df)
     return (hashed_df)
-    
+
+target = 'ALCOHOL_RELATED'    
 data_cache = num_cat(dataset)
-plot_dataset = uni_bi_numeric(dataset,data_cache,0.7)
+plot_dataset = uni_bi_numeric(dataset,data_cache,0.9)
 plot_dataset.loc[:,['level_0','level_1']].apply(lambda x_send: plot_graph(dataset,x_send,'scatter'),axis=1)
 
 dataset_outlier_removed = outlier_detection(dataset,data_cache)
-pca_components = PCA_func(dataset_outlier_removed.loc[:,set(data_cache['numeric']) - set(target)],\
-                                                     'basic')
-
 dataset_outlier_removed_hashed_cat = encoding(dataset_outlier_removed.loc[:,set(data_cache['categorical']) - set(target)])
-
 pca_components = PCA_func(dataset_outlier_removed_hashed_cat,'sparse')
