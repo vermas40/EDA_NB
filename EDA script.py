@@ -3,8 +3,9 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 from sklearn.neighbors import LocalOutlierFactor
+from sklearn.impute import KNNImputer
 from sklearn.decomposition import PCA,TruncatedSVD
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler,LabelEncoder
 from sklearn.feature_extraction import FeatureHasher
 
 # Graphics in retina format are more sharp and legible
@@ -14,7 +15,7 @@ from sklearn.feature_extraction import FeatureHasher
 plt.rcParams['figure.figsize'] = 8, 5
 plt.rcParams['image.cmap'] = 'viridis'
 
-os.chdir('C:\\Users\\shivam.verma\\Documents\\Side Hoes\\EDA_NB')
+os.chdir('E:\\Libraries\\Documents\\Side Hoes\\EDA\\EDA\\EDA_NB')
 
 dataset = pd.read_csv('Crashes_Last_Five_Years.csv')
 
@@ -92,8 +93,16 @@ def PCA_func(df,type_PCA):
         df = df[[explained_variance.loc[explained_variance['cum_var'] <= 0.9,'comp_num'] - 1]]
         
     return(df)
+
+def missing_value_treatment(df):
+    imputer = KNNImputer(n_neighbors=5)
+    
     
 def outlier_detection(out_ds,data_types):
+    """
+    Local Outlier factor sees the distance of a particular point with it's immaediate neighbors.
+    If the distance is very great then the point is classified as an outlier.
+    """
     out_ds = out_ds.fillna(0)    
     clf = LocalOutlierFactor(n_neighbors=20)
     clf.fit_predict(out_ds[data_types['numeric']])
@@ -102,11 +111,14 @@ def outlier_detection(out_ds,data_types):
     return(out_ds)
     
 def encoding(df):
-    feature_hasher = FeatureHasher(input_type = 'string')
+    le = LabelEncoder()
+    df = df.apply(le.fit_transform)
+    #feature_hasher = FeatureHasher(input_type = 'string')
+    feature_hasher = FeatureHasher()
     hashed_df = feature_hasher.fit_transform(df)
     return (hashed_df)
 
-target = 'ALCOHOL_RELATED'    
+target = 'ALCOHOL_RELATED'
 data_cache = num_cat(dataset)
 plot_dataset = uni_bi_numeric(dataset,data_cache,0.9)
 plot_dataset.loc[:,['level_0','level_1']].apply(lambda x_send: plot_graph(dataset,x_send,'scatter'),axis=1)
