@@ -15,7 +15,7 @@ from sklearn.feature_extraction import FeatureHasher
 plt.rcParams['figure.figsize'] = 8, 5
 plt.rcParams['image.cmap'] = 'viridis'
 
-os.chdir('E:\\Libraries\\Documents\\Side Hoes\\EDA\\EDA\\EDA_NB')
+os.chdir('C:\\Users\\shivam.verma\\Documents\\Side Hoes\\EDA_NB')
 
 dataset = pd.read_csv('Crashes_Last_Five_Years.csv')
 
@@ -94,21 +94,27 @@ def PCA_func(df,type_PCA):
         
     return(df)
 
-def missing_value_treatment(df):
-    imputer = KNNImputer(n_neighbors=5)
+def missing_value_treatment(X):
+    """
+    Performing imputation for categorical & continuous
+    """
     
+    if X.dtypes == 'O':
+        #replacing all the nan with the most common level in categorical data
+    else:
+        imputer = KNNImputer(n_neighbors=5)
+        imputer.fit_transform(X)
     
-def outlier_detection(out_ds,data_types):
+def outlier_detection(df,data_types):
     """
     Local Outlier factor sees the distance of a particular point with it's immaediate neighbors.
     If the distance is very great then the point is classified as an outlier.
     """
-    out_ds = out_ds.fillna(0)    
     clf = LocalOutlierFactor(n_neighbors=20)
-    clf.fit_predict(out_ds[data_types['numeric']])
+    clf.fit_predict(df[data_types['numeric']])
     X_scores = clf.negative_outlier_factor_
-    out_ds = out_ds.iloc[~out_ds.index.isin(np.where(np.absolute(np.around(X_scores,decimals = 0)) != 1)[0])]
-    return(out_ds)
+    df = df.iloc[~df.index.isin(np.where(np.absolute(np.around(X_scores,decimals = 0)) != 1)[0])]
+    return(df)
     
 def encoding(df):
     le = LabelEncoder()
