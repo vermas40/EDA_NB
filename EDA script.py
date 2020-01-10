@@ -1,13 +1,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
-import math
 import numpy as np
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.impute import KNNImputer
 from sklearn.decomposition import PCA,TruncatedSVD
 from sklearn.preprocessing import StandardScaler,LabelEncoder
 from sklearn.feature_extraction import FeatureHasher
+from sklearn.feature_selection import RFE
+from sklearn.linear_model import LinearRegression,LogisticRegression
 
 # Graphics in retina format are more sharp and legible
 #%config InlineBackend.figure_format = 'retina' 
@@ -16,7 +17,7 @@ from sklearn.feature_extraction import FeatureHasher
 plt.rcParams['figure.figsize'] = 8, 5
 plt.rcParams['image.cmap'] = 'viridis'
 
-os.chdir('E:\\Libraries\\Documents\\Side Hoes\\EDA\\EDA\\EDA_NB')
+os.chdir('C:\\Users\\shivam.verma\\Documents\\Side Hoes\\EDA_NB')
 
 dataset = pd.read_csv('Crashes_Last_Five_Years.csv')
 
@@ -136,6 +137,20 @@ def encoding(df):
     hashed_df = feature_hasher.fit_transform(df.to_dict(orient='records'))
     return (hashed_df)
 
+def feature_selection(df,target,exercise):
+    X = df.iloc[:,~df.columns.isin([target])]
+    y = df[[target]]
+    
+    if exercise == 'regression':
+        estimator = LinearRegression()
+    elif exercise == 'classification':
+        estimator = LogisticRegression()
+    
+    selector = RFE(estimator,step=1)
+    selector = selector.fit(X,y)
+    
+    
+    return(X.loc[:,selector.support_].columns)
 
 target = 'ALCOHOL_RELATED'
 data_cache = num_cat(dataset)
@@ -144,4 +159,8 @@ plot_dataset.loc[:,['level_0','level_1']].apply(lambda x_send: plot_graph(datase
 dataset.loc[:,dataset.columns[dataset.isna().any()]] = dataset.loc[:,dataset.columns[dataset.isna().any()]].apply(missing_value_treatment)
 dataset_outlier_removed = outlier_detection(dataset,data_cache)
 dataset_outlier_removed_hashed_cat = encoding(dataset_outlier_removed.loc[:,set(data_cache['categorical']) - set(target)])
-pca_components = PCA_func(dataset_outlier_removed_hashed_cat,'sparse')
+pca_components_cat_data = PCA_func(dataset_outlier_removed_hashed_cat,'sparse')
+dataset_categorical_pca = pd.concat([dataset_outlier_removed[data_cache['numeric']],pca_components_cat_data,dataset_outlier_removed[target]],axis=1)
+
+
+
