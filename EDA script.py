@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+import math
 import numpy as np
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.impute import KNNImputer
@@ -15,7 +16,7 @@ from sklearn.feature_extraction import FeatureHasher
 plt.rcParams['figure.figsize'] = 8, 5
 plt.rcParams['image.cmap'] = 'viridis'
 
-os.chdir('C:\\Users\\shivam.verma\\Documents\\Side Hoes\\EDA_NB')
+os.chdir('E:\\Libraries\\Documents\\Side Hoes\\EDA\\EDA\\EDA_NB')
 
 dataset = pd.read_csv('Crashes_Last_Five_Years.csv')
 
@@ -28,7 +29,7 @@ def num_cat(df):
         'categorical' : cat
     }
     
-    return datatypes
+    return (datatypes)
 
 def uni_bi_numeric(df,data_types,lower_threshold = 0.8):
     print(df[data_types['numeric']].describe())
@@ -74,7 +75,7 @@ def PCA_func(df,type_PCA):
         df = pca.fit_transform(df)
     elif type_PCA == 'sparse':
         pca = TruncatedSVD(n_components = 20,n_iter = 7,random_state = 42)
-        pca.fit_transform(df)
+        df = pca.fit_transform(df)
     
     explained_variance = pd.DataFrame(pca.explained_variance_ratio_)
     explained_variance['comp_num'] = range(1,len(explained_variance)+1)
@@ -86,24 +87,32 @@ def PCA_func(df,type_PCA):
     
     
     if type_PCA == 'sparse':
-        df = df\
-        .toarray()\
-        [:,explained_variance.loc[explained_variance['cum_var'] <= 0.9,'comp_num'] - 1]
+        #if first component itself is explaining more than 90 % then just take the first component only
+        if explained_variance.loc[0,'cum_var'] > 0.9:
+            df = pd.DataFrame(df[:,0])
+        else:
+            df = pd.DataFrame(df[:,explained_variance.loc[explained_variance['cum_var'] <= 0.9,'comp_num'] - 1])
     elif type_PCA == 'basic':
-        df = df[[explained_variance.loc[explained_variance['cum_var'] <= 0.9,'comp_num'] - 1]]
+        if explained_variance.loc[0,'cum_var'] > 0.9:
+            df = df[:,0]
+        else:
+            df = df[[explained_variance.loc[explained_variance['cum_var'] <= 0.9,'comp_num'] - 1]]
         
     return(df)
 
-def missing_value_treatment(X):
+def missing_value_treatment(df):
     """
     Performing imputation for categorical & continuous
     """
     
-    if X.dtypes == 'O':
+    if df.dtypes == 'O':
         #replacing all the nan with the most common level in categorical data
+        df = df.fillna(df.value_counts().index[0])
     else:
         imputer = KNNImputer(n_neighbors=5)
-        imputer.fit_transform(X)
+        imputer.fit_transform(df)
+    
+    return (df)
     
 def outlier_detection(df,data_types):
     """
@@ -113,22 +122,26 @@ def outlier_detection(df,data_types):
     clf = LocalOutlierFactor(n_neighbors=20)
     clf.fit_predict(df[data_types['numeric']])
     X_scores = clf.negative_outlier_factor_
-    df = df.iloc[~df.index.isin(np.where(np.absolute(np.around(X_scores,decimals = 0)) != 1)[0])]
+    df = df.iloc[~df.index.isin(np.where(np.absolute(np.around(X_scores,decimals = 0)) != 1)[0])].reset_index(drop=True)
     return(df)
     
 def encoding(df):
+    """
+    In office post a question about why feature hasher works differently with different input types
+    """
     le = LabelEncoder()
     df = df.apply(le.fit_transform)
     #feature_hasher = FeatureHasher(input_type = 'string')
     feature_hasher = FeatureHasher()
-    hashed_df = feature_hasher.fit_transform(df)
+    hashed_df = feature_hasher.fit_transform(df.to_dict(orient='records'))
     return (hashed_df)
+
 
 target = 'ALCOHOL_RELATED'
 data_cache = num_cat(dataset)
 plot_dataset = uni_bi_numeric(dataset,data_cache,0.9)
 plot_dataset.loc[:,['level_0','level_1']].apply(lambda x_send: plot_graph(dataset,x_send,'scatter'),axis=1)
-
+dataset.loc[:,dataset.columns[dataset.isna().any()]] = dataset.loc[:,dataset.columns[dataset.isna().any()]].apply(missing_value_treatment)
 dataset_outlier_removed = outlier_detection(dataset,data_cache)
 dataset_outlier_removed_hashed_cat = encoding(dataset_outlier_removed.loc[:,set(data_cache['categorical']) - set(target)])
 pca_components = PCA_func(dataset_outlier_removed_hashed_cat,'sparse')
