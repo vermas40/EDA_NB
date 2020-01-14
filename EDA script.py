@@ -1,3 +1,7 @@
+"""
+Add box plots and doc strings 
+"""
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
@@ -174,19 +178,25 @@ def EDA(name_of_dataset,target,type_exercise):
     data_cache = num_cat(dataset)
     plot_dataset = uni_bi_numeric(dataset,data_cache,0.9)
     plot_dataset.loc[:,['level_0','level_1']].apply(lambda x_send: plot_graph(dataset,x_send,'scatter'),axis=1)
+    print('Plotted scatter plots')
     dataset.loc[:,dataset.columns[dataset.isna().any()]] = dataset.loc[:,dataset.columns[dataset.isna().any()]].apply(missing_value_treatment)
-    
+    print('Performed missing value treatment')
     dataset.loc[:,data_cache['numeric']].apply(lambda x: plot_graph(x,['values','probability'],'before_outlier_density'),axis=0)
+    print('Plotted PDFs')
     dataset_outlier_removed = outlier_detection(dataset,data_cache)
+    print('Performed outlier treatment')
     dataset_outlier_removed.loc[:,data_cache['numeric']].apply(lambda x: plot_graph(x,['values','probability'],'after_outlier_density'),axis=0)
+    print('Plotted PDFs after outlier treatment')
     dataset_outlier_removed_hashed_cat = encoding(dataset_outlier_removed.loc[:,set(data_cache['categorical']) - set(target)])
     pca_components_cat_data = PCA_func(dataset_outlier_removed_hashed_cat,'sparse')
+    print('Performed PCA on categorical variables')
     dataset_categorical_pca = pd.concat([dataset_outlier_removed[data_cache['numeric']],pca_components_cat_data,dataset_outlier_removed[target]],axis=1)
     feature_selection(dataset_categorical_pca,target,type_exercise)
+    print('Perfomed feature selection')
     
     return(1)
    
-EDA(dataset,tar)
+EDA("Crashes_Last_Five_Years","ALCOHOL_RELATED","classification")
 
 
 
