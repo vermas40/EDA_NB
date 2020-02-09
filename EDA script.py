@@ -77,7 +77,15 @@ def plot_graph(main_dataset,axis_label,type_of_graph):
         plt.xlabel(axis_label[0])
         plt.ylabel(axis_label[1])        
         figure_name = main_dataset.name
-        
+    
+    elif type_of_graph == 'bar chart':
+        plt.bar(x=[i for i in range(0,len(main_dataset))],\
+                   height=main_dataset[main_dataset.select_dtypes(include=[np.number]).columns[0]],\
+                   tick_label=main_dataset[main_dataset.select_dtypes(include=[object]).columns[0]])
+
+        plt.xlabel(axis_label[0])
+        plt.xlabel(axis_label[1])
+        figure_name = axis_label[0]+' vs '+axis_label[1]
 
     path = os.getcwd()
     plt.savefig(path + '/Plots/'+ type_of_graph + '/' + figure_name +'.png', bbox_inches='tight')
@@ -173,7 +181,7 @@ def feature_selection(df,target,exercise):
 
 def EDA(name_of_dataset,target,type_exercise):
     
-    os.chdir(os.path.dirname(os.path.realpath("EDA script")))
+    os.chdir(r'C:\Users\shivam.verma\Documents\Side Hoes\EDA_NB\Machine_Learning')
     dataset = pd.read_csv(name_of_dataset + '.csv')
     data_cache = num_cat(dataset)
     plot_dataset = uni_bi_numeric(dataset,data_cache,0.9)
@@ -187,16 +195,20 @@ def EDA(name_of_dataset,target,type_exercise):
     print('Performed outlier treatment')
     dataset_outlier_removed.loc[:,data_cache['numeric']].apply(lambda x: plot_graph(x,['values','probability'],'after_outlier_density'),axis=0)
     print('Plotted PDFs after outlier treatment')
-    dataset_outlier_removed_hashed_cat = encoding(dataset_outlier_removed.loc[:,set(data_cache['categorical']) - set(target)])
-    pca_components_cat_data = PCA_func(dataset_outlier_removed_hashed_cat,'sparse')
-    print('Performed PCA on categorical variables')
-    dataset_categorical_pca = pd.concat([dataset_outlier_removed[data_cache['numeric']],pca_components_cat_data,dataset_outlier_removed[target]],axis=1)
-    feature_selection(dataset_categorical_pca,target,type_exercise)
+    try:
+        dataset_outlier_removed_hashed_cat = encoding(dataset_outlier_removed.loc[:,set(data_cache['categorical']).remove(target)])
+        pca_components_cat_data = PCA_func(dataset_outlier_removed_hashed_cat,'sparse')
+        print('Performed PCA on categorical variables')
+        dataset_categorical_pca = pd.concat([dataset_outlier_removed[data_cache['numeric']],pca_components_cat_data,dataset_outlier_removed[target]],axis=1)
+        feature_selection(dataset_categorical_pca,target,type_exercise)
+
+    except:
+        print('No categorical variables to perform PCA')
     print('Perfomed feature selection')
     
     return(1)
    
-EDA("Crashes_Last_Five_Years","ALCOHOL_RELATED","classification")
+EDA("iris","flower_class","classification")
 
 
 
